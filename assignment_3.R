@@ -10,7 +10,8 @@ library(dplyr)
 library(janitor)
 
 # Question 1
-uof <- tibble(read_csv("uof_louisville.csv"))
+uof <- read_csv("uof_louisville.csv")
+uof <- tibble(uof)
 
 #Question 2.a
 uof <- uof %>%  
@@ -48,24 +49,27 @@ most_frequent_day <- frequency$day[1]
 
 #Question 2.d
 day_distribution <- uof %>% 
-  mutate( day= mday(date_of_occurrence)) %>%   
-  group_by(day) %>% 
-  count(day) %>% 
-  arrange(desc(n)) %>% 
-  adorn_totals(where = "row")  %>%
-  mutate( frequency = n / day_distribution$n[32])  
+  mutate( day= day(date_of_occurrence)) %>% 
+  count(day ,sort = T) %>% 
+  mutate( fraction = n / sum(n)) %>%  
+  adorn_totals(where = "row") 
 
 #Question 3.a  
-force_used_1 <- uof %>% 
-  distinct(force_used_1)
+force_used_1 <- unique(uof$force_used_1)
 
 #Question 3.b  
-force_used_2 <- uof %>% 
-  distinct(force_used_2) 
+force_used_2 <- unique(uof$force_used_2) 
 
 #Question 3.c  
 all_force <- uof %>%
-  select(force_used_1:force_used_8) %>%
+  select(force_used_1,
+         force_used_2,
+         force_used_3,
+         force_used_4,
+         force_used_5,
+         force_used_6,
+         force_used_7,
+         force_used_8) %>%
   t() %>%
   c() %>%
   unique()
@@ -76,23 +80,29 @@ violent_force <- c("take down", "hobble", "ecw cartridge deployed", "knee strike
                    "kick", "deadly force used") 
 
 #Question 3.e  
-uof <- uof %>% 
-  mutate(violent_uof_1 = ifelse(force_used_1 %in% violent_force, 1, 0))
+uof <- read_csv("uof_louisville.csv")
+uof <- tibble(uof)
+uof <- uof %>% mutate(violent_uof_1 = ifelse(force_used_1 %in% violent_force, 1, 0))
 
 #Question 3.f 
-violent_force_service_table <- uof %>% 
-  filter(violent_uof_1 == 1) %>% 
-  count(service_rendered ,sort = T) %>% 
-  mutate( frequency = n / sum(n)) %>%  
-  adorn_totals(where = "row") 
+
+violent_force_service_table <- uof %>%
+  filter(violent_uof_1 == 1) %>%
+  count(service_rendered, sort = T) %>%
+  mutate(fraction = n/sum(n)) %>%
+  adorn_totals()
 
 #Question 4.a
 uof_filtered <- uof %>% 
   filter( citizen_gender =="male" | citizen_gender =="female" ) %>%
   filter( !is.na(citizen_race) ) %>% 
-  mutate()
+  mutate(force_used_1_effective_binary = ifelse(force_used_1_effective == "yes" , 1 , 0))
   
+#Question 4.b
+uof_filtered_table <- uof_filtered %>%
+  group_by(citizen_gender, citizen_race) %>%
+  summarize(effective_1 = sum(force_used_1_effective_binary, na.rm = T), counts = n() ) %>%
+  adorn_totals() %>%
+  mutate(fraction_effective = effective_1/counts)
 
-unique(uof_filtered$citizen_race)
 
-?filter
